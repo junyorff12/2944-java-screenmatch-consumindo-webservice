@@ -7,51 +7,70 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class PrincipalComBusca {
     public static void main(String[] args) throws IOException, InterruptedException {
         Scanner sc = new Scanner(System.in);
-        System.out.println("Digite o nome do filme: ");
-        var busca = sc.nextLine();
-        var enderecoBuscado = "https://www.omdbapi.com/?t=" + busca.replace(" ", "+")  + "&apikey=8f2cc816";
+        String busca = "";
+        List<Titulo> titulos = new ArrayList<>();
 
-        try {
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(enderecoBuscado))
-                    .build();
+        Gson gson = new GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE)
+                .setPrettyPrinting()
+                .create();
 
-            HttpResponse<String> response = client
-                    .send(request, HttpResponse.BodyHandlers.ofString());
+        while (!busca.equalsIgnoreCase("sair")) {
+            System.out.println("Digite o nome do filme: ");
+            busca = sc.nextLine();
 
-            String json = response.body();
-            System.out.println(json);
+            if(busca.equalsIgnoreCase("sair")){
+                break;
+            }
 
-            //Gson gson = new Gson();
+            var enderecoBuscado = "https://www.omdbapi.com/?t=" + busca.replace(" ", "+") + "&apikey=8f2cc816";
 
-            //Titulo titulo = gson.fromJson(json, Titulo.class);
-            Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.UPPER_CAMEL_CASE).create();
-            TituloOmdb tituloOmdb = gson.fromJson(json, TituloOmdb.class);
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(enderecoBuscado))
+                        .build();
 
+                HttpResponse<String> response = client
+                        .send(request, HttpResponse.BodyHandlers.ofString());
 
-            Titulo titulo = new Titulo(tituloOmdb);
-            System.out.println("Titulo ja convertido:");
-            System.out.println(titulo);
-        } catch (NumberFormatException e){
-            System.out.println("Ocorreu um erro: ");
-            System.out.println(e.getMessage());
-        }
-        catch (IllegalArgumentException e){
-            System.out.println("Exceção ocorrida no endereço:");
-            System.out.println(e.getMessage());
-        }catch (ErroDeConversaoDeAnoException e){
-            System.out.println(e.getMessage());
+                String json = response.body();
+                System.out.println(json);
+
+                TituloOmdb tituloOmdb = gson.fromJson(json, TituloOmdb.class);
+                Titulo titulo = new Titulo(tituloOmdb);
+
+                titulos.add(titulo);
+
+                FileWriter writer = new FileWriter("titulos.json");
+                writer.write(gson.toJson(titulos));
+                writer.close();
+
+                System.out.println("Titulo ja convertido:");
+                System.out.println(titulo);
+            } catch (NumberFormatException e) {
+                System.out.println("Ocorreu um erro: ");
+                System.out.println(e.getMessage());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Exceção ocorrida no endereço:");
+                System.out.println(e.getMessage());
+            } catch (ErroDeConversaoDeAnoException e) {
+                System.out.println(e.getMessage());
+            }
+
         }
 
         System.out.println("Programa finalizado corretamente!");
